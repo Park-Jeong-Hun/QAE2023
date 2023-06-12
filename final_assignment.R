@@ -109,10 +109,26 @@ df %>%  kable(format="html", escape=FALSE, row.names = FALSE) %>%
 
 #한경 기업레포트수집-------------------------------------------------------------------------------------
 
+
+## Selenium 시작
+rD <- rsDriver(browser="firefox", port=4729L, chromever=NULL)#파이어폭스
+
+remDr <- rD$client
 URL <- "http://hkconsensus.hankyung.com/apps.analysis/analysis.list?&skinType=business"
-res <- read_html(URL, encoding='EUC-KR')
+remDr$navigate(URL)
+
+txt <- remDr$getPageSource()[[1]]
+res <- read_html(txt)
+
+# Navigating pages
+URL <- "https://dart.fss.or.kr/dsab007/main.do?option=corp"
+remDr$navigate(URL)
+
+
+
 #테이블 추출
 tab2 <- res %>% html_table() %>% .[[1]]
+
 
 #링크추출
 pattern <- ".text_l a"
@@ -139,7 +155,11 @@ names(df2) <- c('Date','제목','의견','출처')
 df2 %>%  kable(format="html", escape=FALSE, row.names = FALSE) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
+# Close the browser
+remDr$close()
 
+# stop the selenium server
+rD$server$stop()
 
 
 

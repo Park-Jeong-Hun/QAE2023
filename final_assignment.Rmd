@@ -108,6 +108,46 @@ names(df) <- c("Date","Corp", "보고서")
 
 assign(paste0('df_',date),df)
 
+#--------------------------------------------------------------------
+URL <- "http://hkconsensus.hankyung.com/apps.analysis/analysis.list?&skinType=business"
+remDr$navigate(URL)
+
+txt <- remDr$getPageSource()[[1]]
+res <- read_html(txt)
+
+# Navigating pages
+URL <- "https://dart.fss.or.kr/dsab007/main.do?option=corp"
+remDr$navigate(URL)
+
+
+
+#테이블 추출
+tab2 <- res %>% html_table() %>% .[[1]]
+
+
+#링크추출
+pattern <- ".text_l a"
+link <- res %>% 
+  html_nodes(pattern) %>% 
+  html_attr("href") %>% 
+  str_c('http://hkconsensus.hankyung.com',.)
+
+#제목만 추출
+pattern <- ".text_l a"
+title <- res %>% 
+  html_nodes(pattern) %>% 
+  html_text() %>% 
+  str_trim()
+
+tab2 <- cbind(link, tab2, title) %>% as_tibble()
+
+df2 <- tab2 %>%
+  mutate(name.link = cell_spec(title, "html", link = link, color="#062872")) %>%
+  select(작성일, name.link, 투자의견,제공출처)
+
+names(df2) <- c('Date','제목','의견','출처')
+
+
 # Close the browser
 remDr$close()
 
@@ -134,33 +174,8 @@ df %>% kable(format="html", escape=FALSE, row.names = FALSE) %>%
 ```{r}
 #한경 기업레포트수집-------------------------------------------------------------------------------------
 
-URL <- "http://hkconsensus.hankyung.com/apps.analysis/analysis.list?&skinType=business"
-res <- read_html(URL, encoding='EUC-KR')
-#테이블 추출
-tab2 <- res %>% html_table() %>% .[[1]]
-
-#링크추출
-pattern <- ".text_l a"
-link <- res %>% 
-  html_nodes(pattern) %>% 
-  html_attr("href") %>% 
-  str_c('http://hkconsensus.hankyung.com',.)
-
-#제목만 추출
-pattern <- ".text_l a"
-title <- res %>% 
-  html_nodes(pattern) %>% 
-  html_text() %>% 
-  str_trim()
-
-tab2 <- cbind(link, tab2, title) %>% as_tibble()
-
-df2 <- tab2 %>%
-  mutate(name.link = cell_spec(title, "html", link = link, color="#062872")) %>%
-  select(작성일, name.link, 투자의견,제공출처)
-
-names(df2) <- c('Date','제목','의견','출처')
 
 df2 %>%  kable(format="html", escape=FALSE, row.names = FALSE) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
-```
+
+
